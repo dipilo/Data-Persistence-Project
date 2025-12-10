@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.Overlays;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -18,7 +19,10 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
-    
+    public Text BestScoreText;
+    private int bestScore;
+    private string playerName;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -36,6 +40,9 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+
+        // load best score at start
+        LoadBestScore();
     }
 
     private void Update()
@@ -60,6 +67,9 @@ public class MainManager : MonoBehaviour
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
         }
+
+        // update best score
+        UpdateBestScore();
     }
 
     void AddPoint(int point)
@@ -72,5 +82,46 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        // save best score
+        SaveBestScore();
+        UpdateBestScore();
+    }
+
+    public class SaveData
+    {
+        public int bestScore;
+    }
+    // save best score
+    public void SaveBestScore()
+    {
+        if (m_Points > bestScore)
+        {
+            bestScore = m_Points;
+            SaveData data = new SaveData();
+            data.bestScore = bestScore;
+
+            string json = JsonUtility.ToJson(data);
+
+            System.IO.File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+        }
+    }
+
+    // load best score
+    public void LoadBestScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (System.IO.File.Exists(path))
+        {
+            string json = System.IO.File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            bestScore = data.bestScore;
+        }
+    }
+
+    public void UpdateBestScore()
+    {
+        playerName = PlayerPrefs.GetString("PlayerName", "Anonymous");
+        BestScoreText.text = $"Best Score : {playerName} : {bestScore}";
     }
 }
